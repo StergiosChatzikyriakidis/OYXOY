@@ -1,4 +1,9 @@
-from wordsense.dataset import Dataset, Entry
+import sys
+import os 
+
+sys.path.insert(0, os.path.dirname(__file__)+'/../..')
+
+from src.wordsense.dataset import Dataset, Entry
 from dataclasses import dataclass
 from Levenshtein import distance
 from json import load
@@ -23,9 +28,13 @@ def load_file(file: str) -> Dataset:
 
 
 def process_data():
-    entries = load_file('../../datasets/wordsense/dataset.json').entries
+    entries = load_file('src/wordsense/dataset.json').entries
     print('Preparing lemmatizer...')
-    lemmatizer = spacy.load('el_core_news_sm')
+    try:
+        lemmatizer = spacy.load('el_core_news_sm')
+    except OSError as e:
+        print("Install with `python -m spacy download el_core_news_sm`")
+        raise(e)
     print('Preparing tokenizer...')
     tokenizer = BertTokenizer.from_pretrained("nlpaueb/bert-base-greek-uncased-v1")
     print('Tokenizing...')

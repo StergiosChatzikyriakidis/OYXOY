@@ -1,6 +1,11 @@
-from disambiguation.data import process_data
-from disambiguation.batching import Sampler, sample, collate_fn_1, collate_fn_2
-from disambiguation.model import Disambiguator
+import sys
+import os 
+
+sys.path.insert(0, os.path.dirname(__file__)+'/../..')
+
+from experiments.disambiguation.data import process_data
+from experiments.disambiguation.batching import Sampler, sample, collate_fn_1, collate_fn_2
+from experiments.disambiguation.model import Disambiguator
 
 from torch.nn.functional import nll_loss, binary_cross_entropy_with_logits as bce
 
@@ -11,6 +16,7 @@ from random import seed
 
 def main(device: str = 'cpu'):
     definitions, examples = process_data()
+    breakpoint()
     seed(1312)
     test_definitions = sample(list(range(len(definitions))), int(0.1 * len(definitions)))
     examples = sample(examples, len(examples))
@@ -132,4 +138,4 @@ def main(device: str = 'cpu'):
 
 
 if __name__ == '__main__':
-    main('cuda')
+    main()

@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence as _pad_seq
 
-from inference.data import TokenizedSample, Label, Tag, permute
+from experiments.inference.data import TokenizedSample, Label, Tag, permute
 
 
 def pad_sequence(xs: list[Tensor], pad: int):

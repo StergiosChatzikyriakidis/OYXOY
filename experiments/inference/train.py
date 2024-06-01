@@ -1,8 +1,13 @@
+import sys
+import os 
+
+sys.path.insert(0, os.path.dirname(__file__)+'/../..')
+
 import torch
 from torch import Tensor
-from inference.data import process_data
-from inference.batching import Sampler, collate_fn, Label
-from inference.model import NLI
+from experiments.inference.data import process_data
+from experiments.inference.batching import Sampler, collate_fn, Label
+from experiments.inference.model import NLI
 from torch.nn.functional import binary_cross_entropy_with_logits as bce
 
 from torch.optim import AdamW

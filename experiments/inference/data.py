@@ -1,6 +1,6 @@
 import unicodedata
 from json import load
-from nli.dataset import Sample, Label, Dataset, Tag
+from src.nli.dataset import Sample, Label, Dataset, Tag
 from collections import Counter
 from random import sample as _sample, seed
 from transformers import BertTokenizer
@@ -32,6 +32,7 @@ def read_xnl(file: str) -> list[Sample]:
 def iterative_filter(samples: list[Sample]) -> tuple[list[Sample], list[Sample]]:
     tagset = Counter(tag for sample in samples for tag in sample.tags)
     dev, test = [], []
+    print(sorted(tagset.keys(), key=lambda key: tagset[key]))
     for tag in sorted(tagset.keys(), key=lambda key: tagset[key]):
         subset = [s for s in samples if tag in s.tags and s not in dev and s not in test]
         subset = permute(subset)
@@ -66,11 +67,12 @@ def process_data() -> tuple[tuple[tuple[list[TokenizedSample], list[TokenizedSam
     print('Preparing tokenizer...')
     tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
     # tokenizer = BertTokenizer.from_pretrained("nlpaueb/bert-base-greek-uncased-v1")
-    with open('../../datasets/nli/gold.json', 'r') as f:
+    with open('src/nli/gold.json', 'r') as f:
         gold = Dataset.from_json(load(f))
-    with open('../../datasets/nli/FraCaS.json', 'r') as f:
+    with open('src/nli/FraCaS.json', 'r') as f:
         fracas = Dataset.from_json(load(f))
     dev, test = iterative_filter(gold.samples + fracas.samples)
+    # TODO find xnli 
     xnli_dev = read_xnl('../../xnli.dev.tsv')
     xnli_test = read_xnl('../../xnli.test.tsv')
     print('Tokenizing...')
@@ -79,3 +81,17 @@ def process_data() -> tuple[tuple[tuple[list[TokenizedSample], list[TokenizedSam
              (tokenize_samples(tokenizer, dev),
               tokenize_samples(tokenizer, test))),
             test)
+
+def load_data() -> tuple[tuple[tuple[list[TokenizedSample], list[TokenizedSample]],
+                            tuple[list[TokenizedSample], list[TokenizedSample]]],
+                            list[Sample]]:
+    seed(42)
+    print('Preparing tokenizer...')
+    tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+    # tokenizer = BertTokenizer.from_pretrained("nlpaueb/bert-base-greek-uncased-v1")
+    with open('src/nli/gold.json', 'r') as f:
+        gold = Dataset.from_json(load(f))
+    with open('src/nli/FraCaS.json', 'r') as f:
+        fracas = Dataset.from_json(load(f))
+    dev, test = iterative_filter(gold.samples + fracas.samples)
+    return dev, test
