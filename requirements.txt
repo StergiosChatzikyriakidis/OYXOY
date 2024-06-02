@@ -1,0 +1,9 @@
+levenshtein
+transformers
+spacy
+torch 
+opt_einsum
+torch_geometric
+matplotlib
+pandas
+accelarate
