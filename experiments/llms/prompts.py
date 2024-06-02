@@ -49,8 +49,16 @@ Linguistic tags are organized hierarchically from least to most specific. When a
 """
 zero_shot_nli_label_user = "premise: {}\nhypothesis: {}."
 
-def select_prompt(method):
+few_shot_nli_label_system = "You are an annotator for natural language inference data in greek.\nGiven a premise and a hypothesis, answer with one or two of the words: 'entailment', 'contradiction' or 'neutral'.\nYou can use the following examples as guidance.\nExamples:\n"
+# 1. premise: {entailment_example.premise}\nhypothesis: {entailment_example.hypothesis}\nAnswer: entailment\n2. premise: {unknown_example.premise}\nhypothesis: {unknown_example.hypothesis}\nAnswer: neutral\n3. premise: {contradiction_example.premise}\nhypothesis: {contradiction_example.hypothesis}\nAnswer: contradiction
+
+def select_prompt(method, n_shots=3):
+    METHODS = ['zero_shot_nli_label','zero_shot_nli_tags','few_shot_nli_label']
     if method=='zero_shot_nli_label':
         return zero_shot_nli_label_system, zero_shot_nli_label_user
     elif method=='zero_shot_nli_tags':
-        return zero_shot_nli_tags_system
+        return zero_shot_nli_tags_system, zero_shot_nli_label_user
+    elif method=='few_shot_nli_label':
+        return few_shot_nli_label_system + +"\n".join([f"{ii}. "+"premise: {}\nhypothesis: {}\nAnswer: entailment" for ii in range(n_shots)]), zero_shot_nli_label_system
+    else:
+        assert method in METHODS, f"Prompt should be one of {METHODS}"

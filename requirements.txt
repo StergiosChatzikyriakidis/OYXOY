@@ -6,4 +6,4 @@ opt_einsum
 torch_geometric
 matplotlib
 pandas
-accelarate
+accelerate
