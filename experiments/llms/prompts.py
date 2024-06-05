@@ -59,6 +59,6 @@ def select_prompt(method, n_shots=3):
     elif method=='zero_shot_nli_tags':
         return zero_shot_nli_tags_system, zero_shot_nli_label_user
     elif method=='few_shot_nli_label':
-        return few_shot_nli_label_system + +"\n".join([f"{ii}. "+"premise: {}\nhypothesis: {}\nAnswer: entailment" for ii in range(n_shots)]), zero_shot_nli_label_system
+        return few_shot_nli_label_system + "\n".join([f"{ii}. "+"premise: {}\nhypothesis: {}\nAnswer: entailment" for ii in range(n_shots)]), zero_shot_nli_label_user
     else:
         assert method in METHODS, f"Prompt should be one of {METHODS}"

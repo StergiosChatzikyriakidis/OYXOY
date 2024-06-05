@@ -7,3 +7,4 @@ torch_geometric
 matplotlib
 pandas
 accelerate
+sentence_transformers
