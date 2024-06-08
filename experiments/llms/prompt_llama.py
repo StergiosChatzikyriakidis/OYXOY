@@ -6,11 +6,10 @@ import os, sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 
-from experiments.inference.data import load_data
+from experiments.llms.datasets import PromptHandlerSelector
 import argparse
-from experiments.llms.prompts import select_prompt
 from pathlib import Path
-from experiments.llms.icl import FinetunedXNLIBasedICL
+
 
 def main(args):
     model_id = args.model
@@ -28,45 +27,34 @@ def main(args):
         pipeline.tokenizer.eos_token_id,
         pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
     ]
-
-    prompt_sys, prompt_usr = select_prompt(args.prompt, args.num_shots)
-    dev, test = load_data()
-    if 'few_shot' in args.prompt:
-        icl = FinetunedXNLIBasedICL(dev, test)
-
+    PromptHandlerSelector(args.dataset, args.prompt, args.num_shots)
+    
+    prompt_handler = PromptHandlerSelector(args.dataset).create(args.prompt, args.num_shots)
+        
     Path(args.output_dir_path).mkdir(parents=True, exist_ok=True)
 
-    for ii, sample in tqdm(enumerate(test)):
-        if 'zero_shot' in args.prompt:
-            messages = [
-                {"role": "system", "content": prompt_sys},
-                {"role": "user", "content": prompt_usr.format(sample.premise, sample.hypothesis)},
-            ]
-        else:
-            # few-shot 
-            examples = icl.get_examples_based_on_finetuned_mnli_xnli(args.num_shots, ii)
-            messages = [
-                {"role": "system", "content": prompt_sys.format(*([text for example in examples for text in [example.premise, example.hypothesis]]))},
-                {"role": "user", "content": prompt_usr.format(sample.premise, sample.hypothesis)},
-            ]
+    for test_set_name, test_set in prompt_handler.test_sets.items():
+        for ii, sample in tqdm(enumerate(test_set)):
 
-        prompt = pipeline.tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
-        outputs = pipeline(
-            prompt,
-            max_new_tokens=args.max_new_tokens,
-            eos_token_id=terminators,
-            do_sample=True,
-            temperature=args.temperature,
-            top_p=0.9,
-        )
-        series = pd.DataFrame(test).iloc[ii]
-        series['output'] = outputs[0]["generated_text"][len(prompt):]
-        series.to_csv(f'{args.output_dir_path}/llama3_nli_{ii}.csv')
-        print(outputs[0]["generated_text"][len(prompt):])
+            messages = prompt_handler.get_messages(sample, ii)
+
+            prompt = pipeline.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+            outputs = pipeline(
+                prompt,
+                max_new_tokens=args.max_new_tokens,
+                eos_token_id=terminators,
+                do_sample=True,
+                temperature=args.temperature,
+                top_p=0.9,
+            )
+            series = pd.DataFrame(test_set).iloc[ii]
+            series['output'] = outputs[0]["generated_text"][len(prompt):]
+            series.to_csv(f'{args.output_dir_path}/{test_set_name}/llama3_{ii}.csv')
+            print(outputs[0]["generated_text"][len(prompt):])
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
@@ -77,6 +65,7 @@ if __name__=="__main__":
     parser.add_argument('-temp', '--temperature', required=False, default=0.6, help='temperature argument for the LLM')
     parser.add_argument('-n_tokens', '--max_new_tokens', type=int, required=False, default=4, help='Maximum number of new tokens (following prompt) to generate')
     parser.add_argument('-n_shots', '--num_shots', type=int, required=False, default=None, help='Number of examples to use for the ICL')
+    parser.add_argument('-ds', '--dataset', type=int, required=False, default=None, help='Dataset on which to run the experiment')
 
     args = parser.parse_args()
 

@@ -40,6 +40,15 @@ def process_data():
     print('Tokenizing...')
     return flatten_entries(process_entries(entries, lemmatizer, tokenizer))
 
+def process_data_wo_tokenization():
+    entries = load_file('src/wordsense/dataset.json').entries
+    print('Preparing lemmatizer...')
+    try:
+        lemmatizer = spacy.load('el_core_news_sm')
+    except OSError as e:
+        print("Install with `python -m spacy download el_core_news_sm`")
+        raise(e)
+    return flatten_entries(process_entries_wo_tokenization(entries, lemmatizer))
 
 def _norm(input_str: str) -> str:
     nfkd_form = unicodedata.normalize('NFKD', input_str)
@@ -67,6 +76,27 @@ def tokenize_with_mask(ws: list[str], mask: list[bool], tokenizer: BertTokenizer
     return ([tokenizer.cls_token_id, *(t for ts in tokens for t in ts), tokenizer.sep_token_id],
             [False, *(m for ms in mask for m in ms), False])
 
+def process_entries_wo_tokenization(entries: list[Entry], spacy_model: spacy.Language) \
+        -> list[ProcessedEntry]:
+    processed = []
+    for entry in entries:
+        examples = []
+        definitions = []
+        for sense in entry.senses:
+            sense_examples = []
+            for example in sense.examples:
+                words, mask = word_mask(_norm(entry.lemma), example, spacy_model)
+                if not any(mask) or len(mask) != len(words):
+                    continue
+                sense_examples.append((words, mask))
+            if not sense_examples:
+                continue
+            examples.append(sense_examples)
+            definitions.append(sense.definition)
+        if not examples:
+            continue
+        processed.append(ProcessedEntry(definitions=definitions, examples=examples))
+    return processed
 
 def process_entries(entries: list[Entry], spacy_model: spacy.Language, tokenizer: BertTokenizer) \
         -> list[ProcessedEntry]:

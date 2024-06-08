@@ -1,4 +1,4 @@
-from wordsense.dataset import Dataset, Entry
+from src.wordsense.dataset import Dataset, Entry
 from dataclasses import dataclass
 from Levenshtein import distance
 from json import load

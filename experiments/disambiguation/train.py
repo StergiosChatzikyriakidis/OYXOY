@@ -16,7 +16,6 @@ from random import seed
 
 def main(device: str = 'cpu'):
     definitions, examples = process_data()
-    breakpoint()
     seed(1312)
     test_definitions = sample(list(range(len(definitions))), int(0.1 * len(definitions)))
     examples = sample(examples, len(examples))

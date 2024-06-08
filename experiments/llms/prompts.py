@@ -1,3 +1,11 @@
+DATASETS = ['inference', 'sense-selection', 'word-in-context', 'metaphor']
+METHODS = {
+    'inference': ['zero_shot_nli_label','zero_shot_nli_tags','few_shot_nli_label'],
+    'metaphor': ['zero_shot_metaphor'],
+    'sense-selection': ['zero_shot_ss'],
+    'word-in-context': ['zero_shot_wic'],
+}
+
 zero_shot_nli_label_system = "You are an annotator for natural language inference data in greek.\nGiven a premise and a hypothesis, answer with one or two of the words: 'entailment', 'contradiction' or 'neutral'"
 zero_shot_nli_label_user = "premise: {}\nhypothesis: {}."
 
@@ -52,13 +60,42 @@ zero_shot_nli_label_user = "premise: {}\nhypothesis: {}."
 few_shot_nli_label_system = "You are an annotator for natural language inference data in greek.\nGiven a premise and a hypothesis, answer with one or two of the words: 'entailment', 'contradiction' or 'neutral'.\nYou can use the following examples as guidance.\nExamples:\n"
 # 1. premise: {entailment_example.premise}\nhypothesis: {entailment_example.hypothesis}\nAnswer: entailment\n2. premise: {unknown_example.premise}\nhypothesis: {unknown_example.hypothesis}\nAnswer: neutral\n3. premise: {contradiction_example.premise}\nhypothesis: {contradiction_example.hypothesis}\nAnswer: contradiction
 
-def select_prompt(method, n_shots=3):
-    METHODS = ['zero_shot_nli_label','zero_shot_nli_tags','few_shot_nli_label']
-    if method=='zero_shot_nli_label':
-        return zero_shot_nli_label_system, zero_shot_nli_label_user
-    elif method=='zero_shot_nli_tags':
-        return zero_shot_nli_tags_system, zero_shot_nli_label_user
-    elif method=='few_shot_nli_label':
-        return few_shot_nli_label_system + "\n".join([f"{ii}. "+"premise: {}\nhypothesis: {}\nAnswer: entailment" for ii in range(n_shots)]), zero_shot_nli_label_user
+zero_shot_metaphor_system = "You are a metaphor detection tool that takes as input one sentence responds only with 'yes' if a metaphor appears in the sentence or with 'no' otherwise."
+
+zero_shot_metaphor_user = "Sentence: {}"
+
+zero_shot_wic_system = "You are a word sense disambiguation tool specialized in greek language that takes as input a pair of words (having the same lemma) and a pair of sentences that contain this word and responds only with 'yes' if the word has the same sense in both sentences or with 'no' otherwise."
+
+zero_shot_wic_user = "Words: {}, {}\nSentence 1: {}\nSentence 2: {}"
+
+zero_shot_ss_system = "You are a sense selection tool specialized in greek language that takes as input a word, its definitions and a sentence which contains this word and responds only with the ordering number that corresponds to the correct definition."
+
+zero_shot_ss_user = "Word: {}\nDefinitions: {}\nSentence: {}"
+
+def select_prompt(method, dataset, n_shots=3):
+    if dataset == 'inference':
+        if method=='zero_shot_nli_label':
+            return zero_shot_nli_label_system, zero_shot_nli_label_user
+        elif method=='zero_shot_nli_tags':
+            return zero_shot_nli_tags_system, zero_shot_nli_label_user
+        elif method=='few_shot_nli_label':
+            return few_shot_nli_label_system + "\n".join([f"{ii}. "+"premise: {}\nhypothesis: {}\nAnswer: entailment" for ii in range(n_shots)]), zero_shot_nli_label_user
+        else:
+            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
+    elif dataset == 'metaphor':
+        if method=='zero_shot_metaphor':
+            return zero_shot_metaphor_system, zero_shot_metaphor_user
+        else:
+            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
+    elif dataset == 'sense-selection':
+        if method == 'zero_shot_ss':
+            return zero_shot_ss_system, zero_shot_ss_user
+        else:
+            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
+    elif dataset == 'sense-selection':
+        if method == 'zero_shot_wic':
+            return zero_shot_wic_system, zero_shot_wic_user
+        else:
+            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
     else:
-        assert method in METHODS, f"Prompt should be one of {METHODS}"
+        assert dataset in DATASETS, f"Dataset should be one of {DATASETS}"
