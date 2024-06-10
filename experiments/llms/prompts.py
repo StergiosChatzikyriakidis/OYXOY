@@ -2,7 +2,7 @@ DATASETS = ['inference', 'sense-selection', 'word-in-context', 'metaphor']
 METHODS = {
     'inference': ['zero_shot_nli_label','zero_shot_nli_tags','few_shot_nli_label'],
     'metaphor': ['zero_shot_metaphor'],
-    'sense-selection': ['zero_shot_ss'],
+    'sense-selection': ['zero_shot_ss', 'zero_shot_ss_gr', 'zero_shot_ss_en'],
     'word-in-context': ['zero_shot_wic'],
 }
 
@@ -72,30 +72,11 @@ zero_shot_ss_system = "You are a sense selection tool specialized in greek langu
 
 zero_shot_ss_user = "Word: {}\nDefinitions: {}\nSentence: {}"
 
-def select_prompt(method, dataset, n_shots=3):
-    if dataset == 'inference':
-        if method=='zero_shot_nli_label':
-            return zero_shot_nli_label_system, zero_shot_nli_label_user
-        elif method=='zero_shot_nli_tags':
-            return zero_shot_nli_tags_system, zero_shot_nli_label_user
-        elif method=='few_shot_nli_label':
-            return few_shot_nli_label_system + "\n".join([f"{ii}. "+"premise: {}\nhypothesis: {}\nAnswer: entailment" for ii in range(n_shots)]), zero_shot_nli_label_user
-        else:
-            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
-    elif dataset == 'metaphor':
-        if method=='zero_shot_metaphor':
-            return zero_shot_metaphor_system, zero_shot_metaphor_user
-        else:
-            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
-    elif dataset == 'sense-selection':
-        if method == 'zero_shot_ss':
-            return zero_shot_ss_system, zero_shot_ss_user
-        else:
-            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
-    elif dataset == 'sense-selection':
-        if method == 'zero_shot_wic':
-            return zero_shot_wic_system, zero_shot_wic_user
-        else:
-            assert method in METHODS[dataset], f"Prompt should be one of {METHODS[dataset]}"
-    else:
-        assert dataset in DATASETS, f"Dataset should be one of {DATASETS}"
+zero_shot_ss_system_gr = "Είσαι ένας βοηθός που από μία λίστα με πιθανά νοήματα μιας λέξης επιλέγει το σωστό με βάση μία πρόταση που περιέχει τη λέξη αυτή. Η απάντησή σου θα πρέπει να έιναι μόνο ο αύξων αριθμός που αντιστοιχεί στο σωστό νόημα της λέξης. Δεν πρέπει να περιλαμβάνει τίποτα άλλο πέρα από έναν ακέραιο αριθμό."
+
+zero_shot_ss_user_gr = "Η λέξη {} στην πρόταση: {} μπορεί να έχει ένα από τα ακόλουθα νοήματα.\n{}\nΖητούμενος αύξων αριθμός:"
+
+zero_shot_ss_system_en = "You are a tool that given a list of possible word definitions selects the correct one based on a given sentence that contains the respective word. Your response must be only the ordering number of the correct word definition."
+
+zero_shot_ss_user_en = "The word {} used in the sentence: {} may correspond to one of the following definitions.\n{}"
+

@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 
 from experiments.inference.data import load_data as inference_load_data
 from experiments.metaphor.data import load_file as metaphor_load_file , filter_metaphors
-from experiments.disambiguation.data import load_file as disambiguation_load_file, process_data as disambiguation_process_data
+from experiments.disambiguation.data import load_file as disambiguation_load_file, process_data_wo_tokenization as disambiguation_process_data
 from experiments.disambiguation.batching import Sampler
 from experiments.llms.icl import FinetunedXNLIBasedICL
 from experiments.llms.prompts import *
@@ -50,12 +50,16 @@ class SenseSelectionPromptHandler(DisambiguationPromptHandler):
     def _sampler_to_data(self, sampler):
         examples = pd.DataFrame(sampler.examples, columns=['example','sample_id', 'def_id'])
         definitions = pd.Series(sampler.definitions, name='definitions').reset_index()
-        data = examples.merge(definitions, left_on='sample_id', right_on='index')[['example', 'definitions']]
+        data = examples.merge(definitions, left_on='sample_id', right_on='index')[['example', 'definitions', 'def_id']]
         return data
 
     def _get_prompts(self):
         if self.method == 'zero_shot_ss':
             return zero_shot_ss_system, zero_shot_ss_user
+        elif self.method =='zero_shot_ss_gr':
+            return zero_shot_ss_system_gr, zero_shot_ss_user_gr
+        elif self.method =='zero_shot_ss_en':
+            return zero_shot_ss_system_en, zero_shot_ss_user_en
         assert self.method in METHODS['sense-selection'], f"Prompt should be one of {METHODS['sense-selection']}"
     
 
@@ -63,7 +67,7 @@ class SenseSelectionPromptHandler(DisambiguationPromptHandler):
         prompt_sys, prompt_usr = self._get_prompts()
         messages = [
             {"role": "system", "content": prompt_sys},
-            {"role": "user", "content": prompt_usr.format(sample['example'][0][sample['example'][1].index(True)], "".join([f'{ii+1}. {definition} ' for ii,definition in enumerate(sample['definitions'])]), " ".join(sample['example'][0]))},
+            {"role": "user", "content": prompt_usr.format(sample['example'][0][sample['example'][1].index(True)], " ".join(sample['example'][0]), "".join([f'{ii+1}. {definition} ' for ii,definition in enumerate(sample['definitions'])]))},
         ] 
         return messages
 

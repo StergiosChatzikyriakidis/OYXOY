@@ -1,8 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-
-
-from experiments.inference.data import load_data
 from tqdm import tqdm
 import pandas as pd
 from sentence_transformers.util import semantic_search

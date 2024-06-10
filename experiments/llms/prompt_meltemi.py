@@ -1,3 +1,4 @@
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from tqdm import tqdm
 import transformers
 import torch
@@ -11,21 +12,16 @@ import argparse
 from pathlib import Path
 
 
+
+
 def main(args):
-    model_id = args.model
+    device = "cpu" # the device to load the model onto
 
-    pipeline = transformers.pipeline(
-        "text-generation",
-        model=model_id,
-        model_kwargs={"torch_dtype": torch.bfloat16},
-        device_map="auto",
-        token=args.hf_token
-    )
+    model = AutoModelForCausalLM.from_pretrained(args.model)
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
-    terminators = [
-        pipeline.tokenizer.eos_token_id,
-        pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-    ]
+    model.to(device)
+
     
     prompt_handler = PromptHandlerSelector(args.dataset).create(args.prompt, args.num_shots)
 
@@ -35,29 +31,25 @@ def main(args):
 
             messages = prompt_handler.get_messages(sample, ii)
 
-            prompt = pipeline.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True
+            
+            prompt = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            input_prompt = tokenizer(prompt, return_tensors='pt').to(device)
+            outputs = model.generate(
+                input_prompt['input_ids'], 
+                max_new_tokens=args.max_new_tokens, 
+                do_sample=True, 
+                temperature=args.temperature
             )
-            outputs = pipeline(
-                prompt,
-                max_new_tokens=args.max_new_tokens,
-                eos_token_id=terminators,
-                do_sample=True,
-                temperature=args.temperature,
-                top_p=0.9,
-            )
+
             series = pd.DataFrame(test_set).iloc[ii]
-            series['output'] = outputs[0]["generated_text"][len(prompt):]
+            series['output'] = tokenizer.batch_decode(outputs)[0][6+len(prompt):-4]
             series.to_csv(f'{args.output_dir_path}/{test_set_name}/llama3_{ii}.csv')
-            print(outputs[0]["generated_text"][len(prompt):])
+            print(tokenizer.batch_decode(outputs)[0][6+len(prompt):-4])
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model', default="meta-llama/Meta-Llama-3-8B-Instruct", help="pretrained model from HF that can be used for llama prompting")
+    parser.add_argument('-m', '--model', default="ilsp/Meltemi-7B-Instruct-v1", help="pretrained model from HF that can be used for llama prompting")
     parser.add_argument('-out', '--output_dir_path', required=True, help='Directory path where output .csv files will be stored') 
-    parser.add_argument('-token', '--hf_token', required=True, help='HuggingFace token') 
     parser.add_argument('-prompt', '--prompt', required=True, help='Prompt method from the available in `experiments/llms/prompts.py`')
     parser.add_argument('-temp', '--temperature', required=False, default=0.6, help='temperature argument for the LLM')
     parser.add_argument('-n_tokens', '--max_new_tokens', type=int, required=False, default=4, help='Maximum number of new tokens (following prompt) to generate')
