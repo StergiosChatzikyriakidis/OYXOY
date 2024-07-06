@@ -48,3 +48,11 @@ class FinetunedXNLIBasedICL:
         contradiction_examples = [self.dev_contr[self.res_contr[idx][ii]['corpus_id']] for ii in range(n_shots//3)]
         return entailment_examples + unknown_examples + contradiction_examples
     
+
+class TagsBasedICL:
+    def __init__(self):
+        pass
+    
+    def get_examples_based_on_one_hot_enc(self):
+        pass
+    

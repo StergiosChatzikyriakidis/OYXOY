@@ -160,10 +160,10 @@ class MetaphorPromptHandler:
         iv_entries, oov_entries = data[:oov_split], data[oov_split:]
         iv_examples = [(m, True) for ms, _ in iv_entries for m in ms] + [(n, False) for _, ns in iv_entries for n in ns]
         split1, split2 = int(len(iv_examples) * 0.6), int(len(iv_examples) * 0.8)
-        train, dev, self.test = iv_examples[:split1], iv_examples[split1:split2], iv_examples[split2:]
+        self.train_initial, self.dev, self.test = iv_examples[:split1], iv_examples[split1:split2], iv_examples[split2:]
         self.oov_examples = [(m, True) for ms, _ in oov_entries for m in ms] + [(n, False) for _, ns in oov_entries for n in ns]
-        print(len(train), len(dev), len(self.test), len(self.oov_examples))
-        self.train =  train + dev
+        print(len(self.train_initial), len(self.dev), len(self.test), len(self.oov_examples))
+        self.train =  self.train_initial + self.dev
         self.method = method
         self.test_sets = {'iv' :self.test, 'oov':self.oov_examples}
     
@@ -181,6 +181,12 @@ class MetaphorPromptHandler:
         ]
         
         return messages
+    
+    def to_csv(self):
+        for sample in self.train_initial:
+            messages = self.get_messages(sample)
+            messages.append(sample[1])
+
 
 class PromptHandlerSelector:
     def __init__(self, dataset):
