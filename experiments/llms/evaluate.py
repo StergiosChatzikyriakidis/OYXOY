@@ -5,6 +5,18 @@ from tqdm import tqdm
 import argparse
 import re 
 
+def aggregate_results(dir_path):
+    csvs = glob(dir_path+'/*/llama3*.csv')
+    csvs = sorted(csvs, key= lambda x: int(x.split('.')[0].split('_')[-1]))
+    llama_results = []
+    for csv_file in tqdm(csvs):
+        df = pd.read_csv(csv_file, header=None).T
+        df.columns = df.iloc[0]
+        df = df[1:]
+        llama_results.append(df)
+    total = pd.concat(llama_results)
+    return total
+
 def extract_integers(sentence):
     """Extracts all integers from a given sentence.
 
@@ -22,32 +34,21 @@ def extract_integers(sentence):
 def main(args):
     print(args)
     if args.dataset == 'metaphor':
-        csvs = glob(args.input_dir_path+'/*/llama3*.csv')
-        csvs = sorted(csvs, key= lambda x: int(x.split('.')[0].split('_')[-1]))
-        llama_results = []
-        for csv_file in tqdm(csvs):
-            df = pd.read_csv(csv_file, header=None).T
-            df.columns = df.iloc[0]
-            df = df[1:]
-            llama_results.append(df)
-        total = pd.concat(llama_results)
+        total = aggregate_results(args.input_dir_path)
         total['output'] = total.output.apply(lambda value: 'True' if value=='yes' else 'False')
         print(classification_report(total['1'], total['output']))
 
     elif args.dataset == 'word-in-context':
-        csvs = glob(args.input_dir_path+'/*/llama3*.csv')
-        csvs = sorted(csvs, key= lambda x: int(x.split('.')[0].split('_')[-1]))
-        llama_results = []
-        for csv_file in tqdm(csvs):
-            df = pd.read_csv(csv_file, header=None).T
-            df.columns = df.iloc[0]
-            df = df[1:]
-            llama_results.append(df)
-        total = pd.concat(llama_results)
+        total = aggregate_results(args.input_dir_path)
         total['output'] = total.output.apply(lambda value: 'True' if value=='yes' else 'False')
         print(classification_report(total['target'], total['output']))
 
     elif args.dataset == 'sense-selection':
+        total = aggregate_results(args.input_dir_path)
+        total['output'] = total.output.apply(lambda x: str(int(x)-1) if x.isdigit() else str(int(extract_integers(x)[0])-1) if len(extract_integers(x))>0 else '0')
+        print(classification_report(total['def_id'], total['output']))
+        
+    elif args.dataset == 'inference':
         csvs = glob(args.input_dir_path+'/*/llama3*.csv')
         csvs = sorted(csvs, key= lambda x: int(x.split('.')[0].split('_')[-1]))
         llama_results = []
@@ -57,8 +58,10 @@ def main(args):
             df = df[1:]
             llama_results.append(df)
         total = pd.concat(llama_results)
-        total['output'] = total.output.apply(lambda x: str(int(x)-1) if x.isdigit() else str(int(extract_integers(x)[0])-1) if len(extract_integers(x))>0 else '0')
-        print(classification_report(total['def_id'], total['output']))
+        total.labels = total.labels.apply(lambda labels: labels.strip('{}').split(', ')[0].lower())
+        total.output = total.output.apply(lambda out: 'unknown' if out.lower()=='neutral' else out.lower())
+        
+        print(classification_report(total['labels'], total['output']))
 
 if __name__=="__main__":
 

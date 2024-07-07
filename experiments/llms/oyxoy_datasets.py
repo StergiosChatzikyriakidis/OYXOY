@@ -10,6 +10,7 @@ from experiments.disambiguation.batching import Sampler
 from experiments.llms.icl import FinetunedXNLIBasedICL
 from experiments.llms.prompts import *
 from random import seed, sample
+from pathlib import Path
 
 
 class DisambiguationPromptHandler:
@@ -150,6 +151,15 @@ class InferencePromptHandler:
             ]
         return messages
 
+    def get_chats(self):
+        dev_sample_messages = []
+        for sample in self.dev:
+            messages = self.get_messages(sample, None)
+            messages.append({'role':'assistant', 'content': ' '.join([str(label).lower() if str(label)!='Unknown' else 'neutral' for label in sample.labels]) })
+            dev_sample_messages.append(messages)
+
+        return {"chat": dev_sample_messages}
+
 class MetaphorPromptHandler:
     def __init__(self, method, n_shots):
         entries = metaphor_load_file('src/wordsense/dataset.json')
@@ -182,10 +192,20 @@ class MetaphorPromptHandler:
         
         return messages
     
-    def to_csv(self):
+    def get_chats(self):
+        train_sample_messages = []
         for sample in self.train_initial:
             messages = self.get_messages(sample)
-            messages.append(sample[1])
+            messages.append({'role':'assistant', 'content': 'yes' if sample[1] else 'no'})
+            train_sample_messages.append(messages)
+
+        dev_sample_messages = []
+        for sample in self.dev:
+            messages = self.get_messages(sample)
+            messages.append({'role':'assistant', 'content': 'yes' if sample[1] else 'no'})
+            dev_sample_messages.append(messages)
+
+        return {"chat": train_sample_messages}, {"chat": dev_sample_messages}
 
 
 class PromptHandlerSelector:

@@ -8,3 +8,6 @@ matplotlib
 pandas
 accelerate
 sentence_transformers
+bitsandbytes
+trl
+peft
